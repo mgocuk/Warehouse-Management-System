@@ -65,17 +65,17 @@
                     <tr class="hover:bg-slate-800/40 transition-colors">
                         <td class="p-4 font-semibold text-white">{{ $u->name }}</td>
                         <td class="p-4 text-slate-400 font-mono">{{ $u->email }}</td>
-                        <td class="p-4">
-                            <span class="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase
+                        <td class="p-4 whitespace-nowrap">
+                            <span class="px-2.5 py-1 rounded-md text-[11px] font-bold uppercase whitespace-nowrap inline-block
                                 {{ strtolower($u->role->name ?? '') === 'admin' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : (strtolower($u->role->name ?? '') === 'depo sorumlusu' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-slate-800 text-slate-300') }}">
                                 {{ $u->role->name ?? 'Rol Yok' }}
                             </span>
                         </td>
-                        <td class="p-4 text-center">
+                        <td class="p-4 text-center whitespace-nowrap">
                             @if($u->is_active)
-                            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">AKTİF</span>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap inline-block">AKTİF</span>
                             @else
-                            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">PASİF</span>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 whitespace-nowrap inline-block">PASİF</span>
                             @endif
                         </td>
                         <td class="p-4 text-right whitespace-nowrap">
