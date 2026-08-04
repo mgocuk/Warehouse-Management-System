@@ -36,14 +36,13 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $defaultRole = \App\Models\Role::where('name', 'Depo Sorumlusu')->first() 
-            ?? \App\Models\Role::first();
+        $defaultRole = \App\Models\Role::firstOrCreate(['name' => 'Depo Sorumlusu']);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role_id' => $defaultRole->id ?? 1,
+            'role_id' => $defaultRole->id,
             'is_active' => true,
         ]);
 
