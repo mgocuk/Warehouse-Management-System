@@ -26,19 +26,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // --- Read-Only Routes (Accessible to all logged-in users including Görüntüleme) ---
-    
-    // Products Read & Trash List
-    Route::get('/products/trash', [ProductController::class, 'trash'])->name('products.trash');
+    // --- Static & Read-Only Routes (Must be defined BEFORE wildcard parameters like {product} and {warehouse}) ---
+
+    // Products Static Routes
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-    Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+    Route::get('/products/trash', [ProductController::class, 'trash'])->name('products.trash');
 
     // Categories Read
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 
-    // Warehouses Read
+    // Warehouses Static Routes
     Route::get('/warehouses', [WarehouseController::class, 'index'])->name('warehouses.index');
-    Route::get('/warehouses/{warehouse}', [WarehouseController::class, 'show'])->name('warehouses.show');
 
     // Shelves Read
     Route::get('/shelves', [ShelfController::class, 'index'])->name('shelves.index');
@@ -56,7 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // --- Manager & Admin Mutation Routes (Role: Depo Sorumlusu, Admin) ---
     Route::middleware('role:depo sorumlusu,admin')->group(function () {
         
-        // Products Mutations
+        // Products Create & Store (MUST be defined before /products/{product})
         Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');
         Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
@@ -71,7 +69,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-        // Warehouses Mutations
+        // Warehouses Create & Store (MUST be defined before /warehouses/{warehouse})
         Route::get('/warehouses/create', [WarehouseController::class, 'create'])->name('warehouses.create');
         Route::post('/warehouses', [WarehouseController::class, 'store'])->name('warehouses.store');
         Route::get('/warehouses/{warehouse}/edit', [WarehouseController::class, 'edit'])->name('warehouses.edit');
@@ -93,6 +91,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/stocks/transfer', [StockController::class, 'createTransfer'])->name('stocks.transfer');
         Route::post('/stocks/transfer', [StockController::class, 'storeTransfer'])->name('stocks.transfer.store');
     });
+
+    // --- Dynamic Wildcard Show Routes (Defined AFTER static /create and /trash routes) ---
+    Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+    Route::get('/warehouses/{warehouse}', [WarehouseController::class, 'show'])->name('warehouses.show');
 
     // --- Admin Only Management (Users & Audit Logs) ---
     Route::middleware('role:admin')->group(function () {
