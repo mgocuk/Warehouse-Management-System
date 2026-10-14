@@ -98,7 +98,7 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         $request->validate([
-            // Ignore current product ID AND any soft-deleted products with same code
+            // Güncellenen ürünün kendisini ve silinmiş ürünleri kontrolden hariç tutuyoruz
             'product_code' => [
                 'required', 'string', 'max:100',
                 Rule::unique('products', 'product_code')->ignore($id)->whereNull('deleted_at'),
@@ -114,7 +114,7 @@ class ProductController extends Controller
         $oldCode = $product->product_code;
 
         if ($oldCode !== $request->product_code) {
-            // DB column is 'changed_by', not 'user_id' — matching migration schema
+            // Ürün kodu değiştiğinde eski ve yeni kodu geçmişe kaydediyoruz
             ProductCodeHistory::create([
                 'product_id' => $product->id,
                 'old_code'   => $oldCode,
@@ -139,7 +139,7 @@ class ProductController extends Controller
     public function destroy(string $id)
     {
         $product = Product::findOrFail($id);
-        $product->delete(); // Soft delete
+        $product->delete(); // Çöp kutusuna taşıyoruz (soft delete)
 
         return redirect()->route('products.index')->with('success', 'Ürün çöp kutusuna taşındı.');
     }
@@ -163,8 +163,7 @@ class ProductController extends Controller
         $product = Product::onlyTrashed()->findOrFail($id);
 
         DB::transaction(function () use ($product) {
-            // Nullify product_id FK in stock_movements before hard deleting
-            // (stock_movements.product_id is constrained without cascade)
+            // Kalıcı silmeden önce hareket geçmişindeki ürün bağlantısını null yapıyoruz
             StockMovement::where('product_id', $product->id)->update(['product_id' => null]);
             $product->forceDelete();
         });

@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Sistem Audit Logları (Denetim İzi)')
+@section('title', 'Sistem Logları (Audit Log)')
 
 @section('content')
-<div class="space-y-6 pt-4">
+<div class="space-y-4">
 
-    <!-- Header & Filter Card -->
-    <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+    <!-- Filtre Kartı -->
+    <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
         <div>
-            <h3 class="text-base font-bold text-white">Sistem İşlem Geçmişi (Audit Trail)</h3>
-            <p class="text-xs text-slate-400 mt-1">Veritabanında gerçekleşen ürün, stok, depo, raf ve kullanıcı işlemlerinin detaylı değişim kayıtları.</p>
+            <h2 class="text-sm font-bold text-gray-800">Sistem İşlem Geçmişi</h2>
+            <p class="text-xs text-gray-500">Veritabanında yapılan ekleme, güncelleme ve silme işlemlerinin kayıtları.</p>
         </div>
 
-        <!-- Filter Form -->
-        <form method="GET" action="{{ route('audit-logs.index') }}" class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <select name="action" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+        <!-- Filtre Formu -->
+        <form method="GET" action="{{ route('audit-logs.index') }}" class="flex flex-wrap items-center gap-2">
+            <select name="action" class="border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500">
                 <option value="">Tüm Eylemler</option>
                 <option value="CREATE" {{ request('action') == 'CREATE' ? 'selected' : '' }}>Yeni Kayıt (+)</option>
                 <option value="UPDATE" {{ request('action') == 'UPDATE' ? 'selected' : '' }}>Güncelleme (✎)</option>
@@ -23,7 +23,7 @@
                 <option value="RESTORE" {{ request('action') == 'RESTORE' ? 'selected' : '' }}>Geri Yüklendi (↺)</option>
             </select>
 
-            <select name="table_name" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+            <select name="table_name" class="border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-blue-500">
                 <option value="">Tüm Tablolar</option>
                 <option value="products" {{ request('table_name') == 'products' ? 'selected' : '' }}>Ürünler</option>
                 <option value="stocks" {{ request('table_name') == 'stocks' ? 'selected' : '' }}>Stoklar</option>
@@ -33,104 +33,89 @@
                 <option value="users" {{ request('table_name') == 'users' ? 'selected' : '' }}>Kullanıcılar</option>
             </select>
 
-            <button type="submit" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold">
+            <button type="submit" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1.5 rounded text-xs font-medium">
                 Filtrele
             </button>
 
             @if(request()->anyFilled(['action', 'table_name']))
-            <a href="{{ route('audit-logs.index') }}" class="text-xs text-rose-400 hover:underline">Temizle</a>
+            <a href="{{ route('audit-logs.index') }}" class="text-xs text-red-600 hover:underline ml-1">Sıfırla</a>
             @endif
         </form>
     </div>
 
-    <!-- Audit Logs Table -->
-    <div class="rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl overflow-hidden">
+    <!-- Loglar Tablosu -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800 uppercase tracking-wider">
+            <table class="w-full text-left text-sm border-collapse">
+                <thead class="bg-gray-50 text-gray-700 border-b border-gray-200 text-xs font-semibold uppercase">
                     <tr>
-                        <th class="p-4 font-semibold">Tarih / Saat</th>
-                        <th class="p-4 font-semibold">Kullanıcı</th>
-                        <th class="p-4 font-semibold">Eylem</th>
-                        <th class="p-4 font-semibold">Hedef Tablo</th>
-                        <th class="p-4 font-semibold">Kayıt ID</th>
-                        <th class="p-4 font-semibold">Eski Veri (Değişim Öncesi)</th>
-                        <th class="p-4 font-semibold">Yeni Veri (Değişim Sonrası)</th>
-                        <th class="p-4 font-semibold text-right">IP Adresi</th>
+                        <th class="p-3">Tarih</th>
+                        <th class="p-3">Kullanıcı</th>
+                        <th class="p-3">Eylem</th>
+                        <th class="p-3">Tablo</th>
+                        <th class="p-3">Kayıt ID</th>
+                        <th class="p-3">Eski Veri</th>
+                        <th class="p-3">Yeni Veri</th>
+                        <th class="p-3 text-right">IP</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-800/60">
+                <tbody class="divide-y divide-gray-200 text-xs">
                     @forelse($auditLogs as $log)
-                    <tr class="hover:bg-slate-800/40 transition-colors">
-                        <!-- Tarih / Saat -->
-                        <td class="p-4 text-slate-300 whitespace-nowrap">
-                            <span class="font-mono font-semibold text-white block">{{ $log->created_at->format('d.m.Y') }}</span>
-                            <span class="text-sky-400 font-mono text-[11px] font-bold">{{ $log->created_at->format('H:i:s') }}</span>
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 text-gray-600 whitespace-nowrap">
+                            <span class="font-medium text-gray-800 block">{{ $log->created_at->format('d.m.Y') }}</span>
+                            <span class="text-gray-400 text-[11px]">{{ $log->created_at->format('H:i:s') }}</span>
                         </td>
-
-                        <!-- Kullanıcı -->
-                        <td class="p-4 font-semibold text-white">
+                        <td class="p-3 font-semibold text-gray-800">
                             {{ $log->user->name ?? 'Misafir / Sistem' }}
                         </td>
-
-                        <!-- Eylem -->
-                        <td class="p-4 whitespace-nowrap">
+                        <td class="p-3 whitespace-nowrap">
                             @if($log->action === 'CREATE')
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap inline-block">
-                                YENİ KAYIT (+)
+                            <span class="bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded text-[11px]">
+                                YENİ (+)
                             </span>
                             @elseif($log->action === 'UPDATE')
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap inline-block">
+                            <span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[11px]">
                                 GÜNCELLEME (✎)
                             </span>
                             @elseif($log->action === 'DELETE' || $log->action === 'FORCE_DELETE')
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30 whitespace-nowrap inline-block">
+                            <span class="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[11px]">
                                 SİLİNDİ (✕)
                             </span>
                             @elseif($log->action === 'SOFT_DELETE')
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap inline-block">
+                            <span class="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[11px]">
                                 ÇÖPE TAŞINDI (🗑)
                             </span>
                             @else
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-sky-500/20 text-sky-300 border border-sky-500/30 whitespace-nowrap inline-block">
+                            <span class="bg-gray-100 text-gray-800 font-bold px-2 py-0.5 rounded text-[11px]">
                                 {{ $log->action_label }}
                             </span>
                             @endif
                         </td>
-
-                        <!-- Hedef Tablo -->
-                        <td class="p-4 text-sky-400 font-medium whitespace-nowrap">
-                            <span class="px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700 text-[11px] whitespace-nowrap inline-block">
+                        <td class="p-3 whitespace-nowrap">
+                            <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-[11px] font-medium border border-blue-200">
                                 {{ $log->table_label }}
                             </span>
                         </td>
-
-                        <!-- Kayıt ID -->
-                        <td class="p-4 text-slate-300 font-mono font-bold">#{{ $log->record_id }}</td>
-
-                        <!-- Eski Veri -->
-                        <td class="p-4 text-slate-400 text-xs leading-relaxed max-w-sm">
+                        <td class="p-3 text-gray-700 font-mono font-bold">#{{ $log->record_id }}</td>
+                        <td class="p-3 text-gray-600 max-w-xs leading-relaxed">
                             {!! $log->formatData($log->old_data) !!}
                         </td>
-
-                        <!-- Yeni Veri -->
-                        <td class="p-4 text-slate-200 text-xs leading-relaxed max-w-sm">
+                        <td class="p-3 text-gray-800 max-w-xs leading-relaxed">
                             {!! $log->formatData($log->new_data) !!}
                         </td>
-
-                        <!-- IP Adresi -->
-                        <td class="p-4 text-right text-slate-500 font-mono text-[11px]">{{ $log->ip_address ?? '-' }}</td>
+                        <td class="p-3 text-right text-gray-400 font-mono text-[11px]">{{ $log->ip_address ?? '-' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="p-8 text-center text-slate-500">Sistemde henüz kaydedilmiş bir denetim logu bulunmamaktadır.</td>
+                        <td colspan="8" class="p-6 text-center text-gray-500">Henüz kaydedilmiş log bulunmuyor.</td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="p-4 border-t border-slate-800">
+        <div class="p-3 border-t border-gray-200 bg-gray-50">
             {{ $auditLogs->links() }}
         </div>
     </div>

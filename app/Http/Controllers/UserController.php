@@ -51,7 +51,7 @@ class UserController extends Controller
             'role_id' => 'required|exists:roles,id',
         ]);
 
-        // Guard: Admin cannot deactivate or demote themselves
+        // Giriş yapan admin kendi yetkisini düşüremez veya kendini pasife alamaz
         if ($user->id === Auth::id()) {
             $adminRole = Role::where('name', 'Admin')->first();
             $isBeingDemoted = $adminRole && $request->role_id != $adminRole->id;
@@ -89,12 +89,12 @@ class UserController extends Controller
         }
 
         DB::transaction(function () use ($user) {
-            // Unlink foreign keys before hard deleting user to prevent SQL FK error
+            // Kullanıcı silinmeden önce geçmiş kayıtlardaki kullanıcı id bağlantısını temizliyoruz
             AuditLog::where('user_id', $user->id)->update(['user_id' => null]);
             StockMovement::where('user_id', $user->id)->update(['user_id' => null]);
             ProductCodeHistory::where('changed_by', $user->id)->update(['changed_by' => null]);
 
-            // Hard permanent delete from database
+            // Kullanıcıyı veritabanından kalıcı olarak siliyoruz
             $user->delete();
         });
 

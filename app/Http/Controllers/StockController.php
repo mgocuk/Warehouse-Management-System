@@ -123,7 +123,7 @@ class StockController extends Controller
             'reason'       => 'required|string|max:255',
         ]);
 
-        // Validate that the selected shelf belongs to the selected warehouse
+        // Seçilen rafın bu depoya ait olup olmadığını kontrol ediyoruz
         $shelfBelongsToWarehouse = Shelf::where('id', $request->shelf_id)
             ->where('warehouse_id', $request->warehouse_id)
             ->exists();
@@ -132,7 +132,7 @@ class StockController extends Controller
             return back()->withInput()->with('error', 'Seçilen raf, seçilen depoya ait değil. Lütfen tekrar kontrol edin.');
         }
 
-        // Pessimistic locking inside transaction to prevent race conditions
+        // Stok işlemlerini güvenli şekilde transaction ile yapıyoruz
         DB::transaction(function () use ($request) {
             $stock = Stock::where([
                 'product_id'   => $request->product_id,
@@ -189,7 +189,7 @@ class StockController extends Controller
             return back()->withInput()->with('error', 'Çıkış rafı ile hedef raf aynı olamaz.');
         }
 
-        // Validate shelf-to-warehouse relationships
+        // Rafların seçilen depolara ait olduğunu kontrol ediyoruz
         $fromShelfValid = Shelf::where('id', $request->from_shelf_id)
             ->where('warehouse_id', $request->from_warehouse_id)->exists();
         $toShelfValid = Shelf::where('id', $request->to_shelf_id)
@@ -199,7 +199,7 @@ class StockController extends Controller
             return back()->withInput()->with('error', 'Seçilen raf, seçilen depoya ait değil. Lütfen kontrol edin.');
         }
 
-        // Fetch destination warehouse/shelf names for the movement log reason
+        // Hareket geçmişine açıklama eklemek için depo ve raf bilgilerini alıyoruz
         $toWarehouse = Warehouse::findOrFail($request->to_warehouse_id);
         $toShelf     = Shelf::findOrFail($request->to_shelf_id);
         $fromWarehouse = Warehouse::findOrFail($request->from_warehouse_id);
@@ -207,7 +207,7 @@ class StockController extends Controller
 
         try {
             DB::transaction(function () use ($request, $toWarehouse, $toShelf, $fromWarehouse, $fromShelf) {
-                // Pessimistic lock on source stock to prevent race conditions
+                // Kaynak raftaki stoğu alıyoruz
                 $sourceStock = Stock::where([
                     'product_id'   => $request->product_id,
                     'warehouse_id' => $request->from_warehouse_id,
@@ -219,13 +219,13 @@ class StockController extends Controller
                     throw new \Exception("Kaynak rafta yetersiz stok! Mevcut: {$available}");
                 }
 
-                // Deduct from source
+                // Kaynak raftan miktarı düşüyoruz
                 $sourceOld = $sourceStock->quantity;
                 $sourceNew = $sourceOld - $request->quantity;
                 $sourceStock->quantity = $sourceNew;
                 $sourceStock->save();
 
-                // Add to destination
+                // Hedef rafa miktarı ekliyoruz
                 $destStock = Stock::firstOrNew([
                     'product_id'   => $request->product_id,
                     'warehouse_id' => $request->to_warehouse_id,
@@ -238,7 +238,7 @@ class StockController extends Controller
 
                 $baseReason = $request->reason ?? 'Depolar arası transfer';
 
-                // Log SOURCE movement (stock going out)
+                // Kaynak depo için çıkış hareket kaydı
                 StockMovement::create([
                     'product_id'    => $request->product_id,
                     'warehouse_id'  => $request->from_warehouse_id,
@@ -251,7 +251,7 @@ class StockController extends Controller
                     'reason'        => "{$baseReason} → Hedef: {$toWarehouse->name} / {$toShelf->name}",
                 ]);
 
-                // Log DESTINATION movement (stock arriving) — was missing before
+                // Hedef depo için giriş hareket kaydı
                 StockMovement::create([
                     'product_id'    => $request->product_id,
                     'warehouse_id'  => $request->to_warehouse_id,
